@@ -53,15 +53,16 @@ def GetAllCurrentVars():
 # extract all functions from our current file 
 def GetAllCurrentFunctions():
     # Open the C code file for reading
-    with open(FilePath, 'r') as f:
-        code = f.read()
+    with open('Cproject/main.c', 'r') as file:
+        code = file.read()
 
     # Define a regular expression to match function definitions
-    pattern = r'(?:^|\n)[a-zA-Z_][a-zA-Z0-9_]*\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\([^;]*\)'
+    function_pattern = re.compile(r'\b(\w+)\s+(\w+)\s*\((.*?)\)\s*{')
 
-    # Find all matches of the pattern in the code
-    matches = re.findall(pattern, code)
-    
+    # Find all matches of the function pattern in the code
+    matches = function_pattern.findall(code)
+
+    # Print the names of all functions found
     for match in matches:
-        print(match)
-
+        print(match[1])
+        print(match[2])
