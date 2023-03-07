@@ -12,23 +12,56 @@ else :
     print("#### AUTOMATIC EXIT ####")
     sys.exit()
   
-# Get all files and folders inside the given directory and extract all typedef
+# extract all typedef from all files
 def GetAllTypedef():
     folder_typedef_list = []
 
     for root, dirs, files in os.walk(FolderPath, topdown=False):
         for name in files:
             
+            # Regular expression pattern to match typedef declarations
+            typedef_pattern = re.compile(r'typedef\s+(.+?)\s+(\w+)\s*;', re.DOTALL)
+            
             # Read C code from a file   
             with open(os.path.join(root, name), "r") as f:
-                c_code = f.readlines()
+                c_code = f.read()
 
-            for line in c_code:
-                if "typedef"  in line:
-                    line = line.replace(";", "")
-                    line = line.replace("typedef", "")
-                    folder_typedef_list.append(line)
+            # Find all the typedef declarations
+            typedefs = re.findall(typedef_pattern, c_code)
+            # Append Results to our list
+            for typedef in typedefs:
+                temp = typedef[1] + ' : ' + typedef[0]
+                folder_typedef_list.append(temp)
+
     return(folder_typedef_list)
         
-        
+
+
+# extract all standard variables from our current file 
+def GetAllCurrentVars():
+    with open(FilePath, 'r') as f:
+        c_code = f.read()
+    
+    # RegEx pattern template to find ( type - name - value )
+    pattern = r'\b(int|char|float|double)\b\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([a-zA-Z0-9_]*)\s*;'   
+    matches = re.findall(pattern, c_code)
+    
+    for match in matches:
+        print( '  ------->  ' + match[0] + ' : ' + match[1] + ' : ' +  match[2])
+
+
+# extract all functions from our current file 
+def GetAllCurrentFunctions():
+    # Open the C code file for reading
+    with open(FilePath, 'r') as f:
+        code = f.read()
+
+    # Define a regular expression to match function definitions
+    pattern = r'(?:^|\n)[a-zA-Z_][a-zA-Z0-9_]*\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\([^;]*\)'
+
+    # Find all matches of the pattern in the code
+    matches = re.findall(pattern, code)
+    
+    for match in matches:
+        print(match)
 
