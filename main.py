@@ -2,13 +2,17 @@ import os
 import sys
 import re
 
+############################################################################################################
+# Open the C code file funct in every def will be replaced with only one read at the baginning of the script
+############################################################################################################
+
 ## Get Given args and check if they are correct
 n = len(sys.argv)
-if n < 4 :
+if n == 3 :
     FilePath = sys.argv[1]       
     FolderPath = sys.argv[2]      
 else :
-    print("### Too Many Args Given ###")
+    print("###  PLEASE CHECK YOUR ARGS ###")
     print("#### AUTOMATIC EXIT ####")
     sys.exit()
   
@@ -30,39 +34,49 @@ def GetAllTypedef():
             typedefs = re.findall(typedef_pattern, c_code)
             # Append Results to our list
             for typedef in typedefs:
-                temp = typedef[1] + ' : ' + typedef[0]
-                folder_typedef_list.append(temp)
+                folder_typedef_list.append(typedef)
 
     return(folder_typedef_list)
         
 
-
-# extract all standard variables from our current file 
-def GetAllCurrentVars():
-    with open(FilePath, 'r') as f:
-        c_code = f.read()
+# extract all custom named variables from our current file 
+def GetAllCurrentCustomVars():
+    # Open the C code file
+    with open(FilePath, 'r') as file:
+        c_code = file.read()
     
-    # RegEx pattern template to find ( type - name - value )
-    pattern = r'\b(int|char|float|double)\b\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([a-zA-Z0-9_]*)\s*;'   
+    # RegEx pattern 
+    pattern = r"\b(\w+)\s+(\w+)\s*;\s*$|\b(\w+)\s+(\w+)\s*=\s*[\'\"]?(\w+)[\'\"]?\s*;"   
     matches = re.findall(pattern, c_code)
+  
+    AllTypeDefs = GetAllTypedef()
     
-    for match in matches:
-        print( '  ------->  ' + match[0] + ' : ' + match[1] + ' : ' +  match[2])
+    for item1 in matches:
+        count = 0
+        for item2 in AllTypeDefs:
+            if item1[2] == item2[1]:           
+                results = item1[3] + ' Is ' + item2[0] 
+                count = count + 1
 
+        if count == 0  :
+            print(item1[3] + ' Has no Type')
+        elif count == 1:
+            print(results)
+        elif count > 1:
+            print('Too Many Types')
+
+    return matches
+    
 
 # extract all functions from our current file 
 def GetAllCurrentFunctions():
-    # Open the C code file for reading
-    with open('Cproject/main.c', 'r') as file:
+    # Open the C code file 
+    with open(FilePath, 'r') as file:
         code = file.read()
 
-    # Define a regular expression to match function definitions
+    # RegEx pattern
     function_pattern = re.compile(r'\b(\w+)\s+(\w+)\s*\((.*?)\)\s*{')
-
-    # Find all matches of the function pattern in the code
     matches = function_pattern.findall(code)
 
-    # Print the names of all functions found
-    for match in matches:
-        print(match[1])
-        print(match[2])
+    return matches
+
