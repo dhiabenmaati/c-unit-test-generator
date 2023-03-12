@@ -15,7 +15,9 @@ else :
     print("###  PLEASE CHECK YOUR ARGS ###")
     print("#### AUTOMATIC EXIT ####")
     sys.exit()
-  
+
+############################################################################################################  
+
 # extract all typedef from all files
 def GetAllTypedef():
     folder_typedef_list = []
@@ -66,7 +68,44 @@ def GetAllCurrentCustomVars():
             print('Too Many Types')
 
     return matches
+
+############################################################################################################ 
+
+# Replace All #Define 
+def ReplaceAllDefine():
+    define_list = []
     
+    for root, dirs, files in os.walk(FolderPath, topdown=False):
+        for name in files:
+            
+            # Regular expression pattern to match typedef declarations
+            typedef_pattern = re.compile(r'^#define\s+\w+.*$', flags=re.MULTILINE)
+            
+            # Read C code from a file   
+            with open(os.path.join(root, name), "r") as f:
+                c_code = f.read()
+
+            # Find all the typedef declarations
+            defines = re.findall(typedef_pattern, c_code)
+            # Append Results to our list
+            for define in defines:
+                define_list.append(define)
+
+    # Open the C code file Replace All Define Then Save To .c.test file
+    with open(FilePath, 'r') as file:
+        c_code = file.read()
+    
+    for define in define_list:
+        define = define.split(' ')
+        c_code = c_code.replace(define[-2], define[-1])
+
+    with open(FilePath + ".test", "w") as file:
+        file.write(c_code)
+    
+    return True
+
+
+############################################################################################################     
 
 # extract all functions from our current file 
 def GetAllCurrentFunctions():
@@ -80,3 +119,5 @@ def GetAllCurrentFunctions():
 
     return matches
 
+
+print(ReplaceAllDefine())
