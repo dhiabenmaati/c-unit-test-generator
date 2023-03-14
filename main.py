@@ -71,7 +71,8 @@ def GetAllCurrentCustomVars():
 
 ############################################################################################################ 
 
-# Replace All #Define 
+
+# Replace All #Define (add define at the beginning of the file)
 def ReplaceAllDefine():
     define_list = []
     
@@ -96,8 +97,10 @@ def ReplaceAllDefine():
         c_code = file.read()
     
     for define in define_list:
-        define = define.split(' ')
-        c_code = c_code.replace(define[-2], define[-1])
+        define_splitted = define.split(' ')
+        if define_splitted[-2] in c_code:
+            c_code = define + '\n' + c_code
+            
 
     with open(FilePath + ".test", "w") as file:
         file.write(c_code)
@@ -120,4 +123,5 @@ def GetAllCurrentFunctions():
     return matches
 
 
-print(ReplaceAllDefine())
+
+ReplaceAllDefine()
