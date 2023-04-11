@@ -36,7 +36,6 @@
 //END DEFINE CONSTS STUBS 
 
 //BEGIN TYPE STUBS 
-
 {{Type_Stubs}}
 //END TYPE STUBS
 
@@ -50,3 +49,8 @@
 
 {{Function_Mocks}}
 //END FUNCTION MOCKS
+
+//BEGIN FUNCTION PROTOTYPES 
+
+{{Function_Prototypes}}
+//END FUNCTION PROTOTYPES 

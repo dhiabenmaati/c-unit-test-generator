@@ -27,12 +27,10 @@ else :
     sys.exit()
 
 
-############################################################################################################  
-
+##################### extract all typedef from all files #####################
 # extract all typedef from all files
 def GetAllTypedef():
-    folder_typedef_list = []
-
+    data = []
     for root, dirs, files in os.walk(FolderPath, topdown=False):
         for name in files:
             
@@ -47,12 +45,19 @@ def GetAllTypedef():
             typedefs = re.findall(typedef_pattern, c_code)
             # Append Results to our list
             for typedef in typedefs:
-                folder_typedef_list.append(typedef)
+                new_data = {"Name": typedef[1], "Type": typedef[0]}
+                data.append(new_data)
 
-    return(folder_typedef_list)
+    #Now we have all type defs
+    #we search if there is typedef using another typedef
+    for i in range(len(data)):
+        for j in range(len(data)):
+            if data[i]['Type'] == data[j]['Name']:
+                data[i]['Type'] = data[j]['Type']
+
+    return data
         
-
-# extract all custom named variables from our current file 
+###################### extract all custom named variables from our current file #####################
 def GetAllCurrentCustomVars():
     data = []
     # Open the C code file
@@ -67,13 +72,13 @@ def GetAllCurrentCustomVars():
     
     for item1 in matches:
         count = 0
+        # TOdo changed from tuple to list do required changes here 
         for item2 in AllTypeDefs:
-            # why we used this method !!! If (char var1 = 15 ;) Elif (char var1 ;) !!!
-            if item1[2] == item2[1]:           
-                new_data = {"Variable": item1[3], "Value": item1[4], "Type": item2[0], 'Custom_Name': item2[1]}
+            if item1[2] == item2['Name']:           
+                new_data = {"Variable": item1[3], "Value": item1[4], "Type": item2['Type'], 'Custom_Name': item2['Name']} #If (char var1 = 15 ;)  !! has value
                 count = count + 1
-            elif item1[0] == item2[1]:           
-                new_data = {"Variable": item1[1], "Type": item2[0], 'Custom_Name': item2[1]}
+            elif item1[0] == item2['Name']:           
+                new_data = {"Variable": item1[1], "Type": item2['Type'], 'Custom_Name': item2['Name']}   # if (char var1 ;)  !! has no value
                 count = count + 1
 
         if count == 0  :
@@ -85,10 +90,8 @@ def GetAllCurrentCustomVars():
 
     return data
 
-############################################################################################################ 
 
-
-# Replace All #Define (add define at the beginning of the file)
+###################### Replace All #Define (add define at the beginning of the file) #####################
 def ReplaceAllDefine():
     define_list = []
     data = []
@@ -205,3 +208,4 @@ def FunctionsToStub():
           data.append(new_data)
     
     return data    
+

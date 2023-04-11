@@ -3,13 +3,13 @@ from jinja2 import Template
 from datetime import date
 import main
 
-###################### Get Date And Laptop Name #######################
+###################### Date And Laptop Name ##########################
 Export_Date         = date.today().strftime("%B %d, %Y")          
 Author_Pc_Name      = platform.node()                             
-#######################################################################
+######################################################################
 
 
-####################### Get All DEFINE CONSTS #########################
+####################### DEFINE CONSTS ################################
 DEFINE_CONSTS_STUBS_list    = main.ReplaceAllDefine()
 Define_Consts = ''
 
@@ -18,7 +18,7 @@ for element in DEFINE_CONSTS_STUBS_list:
 #######################################################################
 
 
-#################### Get All Custom Variables & Deftypes ##############
+#################### Custom Variables & Deftypes ######################
 Custom_Vars_list    = main.GetAllCurrentCustomVars() 
 Var_Stubs = ''
 Type_Stubs = ''
@@ -27,15 +27,24 @@ for element in Custom_Vars_list:
     
     Var_Stubs += element['Custom_Name'] + ' ' + element['Variable'] + Var_Val_If_Exist + ' ' + ';' +'\n'
     Type_Stubs += 'typedef' + ' ' + element['Type'] + ' ' +element['Custom_Name'] + ' ' +';' + '\n'
+
+# To remove duplicated typedefs
+Type_Stubs = list(set(Type_Stubs.split('\n')))
+Type_Stubs = '\n'.join(Type_Stubs)
+######################################################################
+
+####################### Functions Mocks ###############################
+Functions_To_Stub_List    = main.FunctionsToStub()
+Function_Mocks = ''
+for element in Functions_To_Stub_List:
+    Function_Mocks += 'MOCK ' + element['Return Type'] + ' ' + element['Function Name'] + ' ' + '(!!!!!! TBD !!!!!)' + ' ; \n'
 #######################################################################
 
-
-####################### Get AllFunctions To Mock ######################
-Functions_To_Mock_List    = main.FunctionsToStub()
-Function_Mocks = ''
-rett = ''
-for element in Functions_To_Mock_List:
-    Function_Mocks += 'MOCK ' + element['Return Type'] + ' ' + element['Function Name'] + ' ' + '(!!!!!! TBD !!!!!)' + ' ; \n'
+####################### Functions Prototypes #########################
+Functions_Prototypes_List    = main.GetAllMainFunctions()
+Function_Prototypes = ''
+for element in Functions_Prototypes_List:
+    Function_Prototypes += element['Return Type'] + ' ' + element['Function Name'] + ' ' + '(!!!!!! TBD !!!!!)' + ' ; \n'
 #######################################################################
 
 
@@ -54,7 +63,8 @@ data = {'File_Name': 'file1.c',
         'Define_Consts': Define_Consts,
         'Type_Stubs': Type_Stubs, 
         'Var_Stubs': Var_Stubs, 
-        'Function_Mocks': Function_Mocks 
+        'Function_Mocks': Function_Mocks,
+        'Function_Prototypes': Function_Prototypes
         }
 
 template = template.render(data)
