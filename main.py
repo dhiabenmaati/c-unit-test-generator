@@ -209,3 +209,18 @@ def FunctionsToStub():
     
     return data    
 
+def GetFunctionsCallsFromArgs(FctBody):
+    data = []
+    function_calls = re.findall(r"\b([a-zA-Z_]\w*)\s*\(([^)]*)\);", FctBody)
+
+    for function_call in function_calls:
+        new_data = {"Function Name": function_call[0], "Arguments": function_call[1]}
+        data.append(new_data)
+
+    return data   
+
+## GET FILE NAME
+def GetFileName():
+    file_name = os.path.basename(FilePath)
+    return file_name
+
