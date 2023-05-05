@@ -13,7 +13,7 @@ file_name_no_ext = file_name.rsplit(".", 1)[0]
 
 
 ####################### DEFINE CONSTS ################################
-DEFINE_CONSTS_STUBS_list    = main.ReplaceAllDefine()
+DEFINE_CONSTS_STUBS_list    = main.Get_Define_Consts()
 Define_Consts = ''
 
 for element in DEFINE_CONSTS_STUBS_list:
@@ -83,7 +83,8 @@ for element in Function_To_Test_List:
     Function_To_Test += '\t/* trace information to indicate what the test covers */ \n'
     Function_To_Test += '\tTRACE(" TBD "); \n\n'
     Function_To_Test += '\t/* description information of what the test does */ \n'
-    Function_To_Test += '\tDESCRIPTION(" TBD "); \n\n'
+    Function_To_Test += '\tDESCRIPTION(" TBD "); \n'
+    Function_To_Test += '\t' + element['Return Type'] + ' ret_expected = TBD ;\n\n' 
 
     # STAGE 2
     if len(Arguments) > 0 : 
@@ -93,22 +94,23 @@ for element in Function_To_Test_List:
 
     # STAGE 3
     function_call = main.GetFunctionsCallsFromArgs(element['Body'])
-    for element in function_call:
-        Function_To_Test += '\tmock_' + element['Function Name'] + '_Return()' + '; \n'
+    for element_body in function_call:
+        Function_To_Test += '\tmock_' + element_body['Function Name'] + '_Return()' + '; \n'
 
     # STAGE 4
-    if len(Arguments) > 0 : 
-        Function_To_Test += '\t/* to be set the function input parameter values with proper values before the call */ \n'           
+    if len(Arguments) > 0 :           
         for i, Argument in enumerate(Arguments):
-            Temp_Args += f"{Argument}, "  
-            Temp_Args = Temp_Args[:-1]
+            if i == len(Arguments) - 1:
+                Temp_Args += Argument
+            else:
+                Temp_Args += f"{Argument}, "
             
-    Function_To_Test += '\t/* the function call */ \n'
-    Function_To_Test +='\t' + element['Function Name'] + '(' + Temp_Args + ') ; \n'
+    Function_To_Test += '\n\t/* the function call */ \n'
+    Function_To_Test +='\t'+ element['Return Type'] + ' ' +element['Function Name'] + '_ret = ' + element['Function Name'] + '(' + Temp_Args + ') ; \n'
 
     # STAGE 5
     Function_To_Test += '\n'
-    Function_To_Test += '\tassert( TBD ); \n'
+    Function_To_Test += '\tassert( ' + element['Function Name'] + '_ret' + ' == ret_expected ); \n'
 
     Function_To_Test += '}'
 #######################################################################

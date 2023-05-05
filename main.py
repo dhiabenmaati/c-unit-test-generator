@@ -38,7 +38,7 @@ def GetAllTypedef():
             typedef_pattern = re.compile(r'typedef\s+(.+?)\s+(\w+)\s*;', re.DOTALL)
             
             # Read C code from a file   
-            with open(os.path.join(root, name), "r") as f:
+            with open(os.path.join(root, name), encoding='utf-8', errors='ignore') as f:
                 c_code = f.read()
 
             # Find all the typedef declarations
@@ -86,43 +86,49 @@ def GetAllCurrentCustomVars():
         elif count == 1:
             data.append(new_data)
         elif count > 1:
+            data.append(new_data)
             print('Too Many Types' + '----------> Error In GetAllCurrentCustomVars()')
 
     return data
 
 
 ###################### Replace All #Define (add define at the beginning of the file) #####################
-def ReplaceAllDefine():
+def Get_Define_Consts():
     define_list = []
     data = []
     
-    for root, dirs, files in os.walk(FolderPath, topdown=False):
-        files = fnmatch.filter(files, '*.h')
-        for name in files:
-            # Regular expression pattern to match typedef declarations
-            typedef_pattern = re.compile(r'^#define\s+\w+\s*.*$', flags=re.MULTILINE)
-            
-            # Read C code from a file   
-            with open(os.path.join(root, name), "rb") as f:
-                c_code = f.read().decode('utf-8')
+    for root, dirs, All_files in os.walk(FolderPath, topdown=False):
+        files = fnmatch.filter(All_files, '*.h')
+        files += fnmatch.filter(All_files, '*.c')
 
-            # Find all the typedef declarations
-            defines = re.findall(typedef_pattern, c_code)
+        for name in files:                      
+            # Read C code from a file   
+            with open(os.path.join(root, name), encoding='utf-8', errors='ignore') as f:
+                c_code = f.read()
+
+            # Find all the define declarations with regex pattern
+            define_pattern = re.compile(r'^#define\s+\w+\s*.*$', flags=re.MULTILINE)
+            defines = re.findall(define_pattern, c_code)
 
             # Append Results to our list
             for define in defines:
+                define.replace('\t',' ') # Chnage tab to space for issue
                 define_list.append(define)
     
-    # Open the C code file Replace All Define Then Save To .c.test file
+    # Open our main c code and search for used defines
     with open(FilePath, 'r') as file:
         c_code = file.read()
     
-    for define in define_list:
-        define.replace('\t',' ') # Chnage tab to space for issue
+    for define in define_list:        
         define_splitted = define.split(' ') 
+        
         if define_splitted[1] in c_code:
-            data.append(define)
-            
+            # We remove all unwanted data and append to the final list
+            cleaning_pattern = r'\s*//.*$'
+            define = re.sub(cleaning_pattern, '', define) # remove the //
+            define = define.split('/*')[0].strip()        # remove the /*
+
+            data.append(define)           
               
     return data
 
@@ -159,43 +165,37 @@ def GetAllMainFunctions():
 ############## EXTRACT ALL FUNCTIONS + BODY FROM HEADERS INCLUDED IN MAIN FILE ############
 
 def GetAllFunctionsFromHeaders():
-  data = []
-  with open(FilePath, 'r') as f:
-      content = f.read()
+    data = []
+        
+    # search for the full path of the file
+    for root, dirs, files in os.walk(FolderPath):
+        files = fnmatch.filter(files, '*.h')
+        for name in files:
+                   
+            ##### NOW WE LOOP ON ALL FOUND HEADERS AND EXTRACT ALL FUNCTIONS
+            with open(os.path.join(root, name), encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+                    
+            pattern = r'\w+\s+\w+\s*\([^)]*\)\s*\{(?:[^{}]*{(?:[^{}]*{[^{}]*}[^{}]*|[^{}])*}[^{}]*|[^{}])*?\}'
+            matches = re.findall(pattern, content, re.DOTALL)
 
-  pattern = r'#include\s*[<"]([^>"]+)[>"]'
-  matches = re.findall(pattern, content, re.DOTALL)
+            for match in matches:
+                # filter and remove empty lines
+                match = "\n".join(filter(lambda x: x.strip(), match.split("\n")))
 
-  # list of standard C headers to exclude
-  exclude_headers = ['stdio.h', 'stdlib.h', 'string.h']
+                # EXTRACT NAME, RETURN_TYPE, ARGS
+                pattern = r"(\w+)\s+(\w+)\((.*?)\)\s*{.*}"
+                match = re.search(pattern, match, re.DOTALL)
+                
+                func_name = match.group(2)
+                return_type = match.group(1)
+                args = match.group(3)
+                args_list = [arg.strip() for arg in args.split(',')] # split args
+                
+                new_data = {"Function Name": func_name, "Return Type": return_type, "Arguments": args_list}
+                data.append(new_data)
 
-  for match in matches:
-    if match not in exclude_headers:
-
-        ##### NOW WE LOOP ON ALL FOUND HEADERS AND EXTRACT ALL FUNCTIONS
-        with open(FolderPath + match, 'r') as f:
-          content = f.read()
-                  
-        pattern = r'\w+\s+\w+\s*\([^)]*\)\s*\{(?:[^{}]*{(?:[^{}]*{[^{}]*}[^{}]*|[^{}])*}[^{}]*|[^{}])*?\}'
-        matches = re.findall(pattern, content, re.DOTALL)
-
-        for match in matches:
-            # filter and remove empty lines
-            match = "\n".join(filter(lambda x: x.strip(), match.split("\n")))
-
-            # EXTRACT NAME, RETURN_TYPE, ARGS
-            pattern = r"(\w+)\s+(\w+)\((.*?)\)\s*{.*}"
-            match = re.search(pattern, match, re.DOTALL)
-            
-            func_name = match.group(2)
-            return_type = match.group(1)
-            args = match.group(3)
-            args_list = [arg.strip() for arg in args.split(',')] # split args
-            
-            new_data = {"Function Name": func_name, "Return Type": return_type, "Arguments": args_list}
-            data.append(new_data)
-
-  return data
+    return data
 
 def FunctionsToStub():
     data = []
@@ -223,4 +223,3 @@ def GetFunctionsCallsFromArgs(FctBody):
 def GetFileName():
     file_name = os.path.basename(FilePath)
     return file_name
-
