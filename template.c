@@ -30,6 +30,8 @@
 * $Log: {{File_Name}} $
 ==============================================================================*/
 
+GCC_WARNING_OPTS("-Wno-error");
+
 //BEGIN DEFINE CONSTS STUBS 
 
 {{Define_Consts }}
@@ -54,6 +56,10 @@
 
 {{Function_Prototypes}}
 //END FUNCTION PROTOTYPES 
+
+USE("BYPASS")
+UNIT_TEST("{{File_Name}}")
+USE("ShortKeywords")
 
 {{Function_To_Test}}
 
