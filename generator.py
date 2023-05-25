@@ -36,11 +36,11 @@ elif n == 3 :
     FilePath = sys.argv[1]       
     FolderPath = sys.argv[2]
 
-    Defines_Condition = 1
-    Vars_Deftype_Condition = 1
-    FuncMock_Condition = 1
-    FuncPrototype_Condition = 1
-    FuncTests_Condition = 1
+    Defines_Condition = '1'
+    Vars_Deftype_Condition = '1'
+    FuncMock_Condition = '1'
+    FuncPrototype_Condition = '1'
+    FuncTests_Condition = '1'
 
     # IF ARGS WITHOUT "/" ADD IT
     pattern = re.compile(r".+/$")  
@@ -124,9 +124,13 @@ if FuncMock_Condition == '1' :
             if i == len(Arguments) - 1:
                 Temp_Args += Argument
             else:
-                Temp_Args += f"{Argument}, "  
+                Temp_Args += Argument + ', '  
         
-        Function_Mocks += 'MOCK ' + element['Return Type'] + ' ' + element['Function Name'] + ' (' + Temp_Args + ') ; \n'
+        Function_Mocks += '\nMOCK ' + element['Return Type'] + ' ' + element['Function Name'] + ' (' + Temp_Args + ') ;  ' + element['Comment'] + '\n'
+
+        # To remove duplicated DEFINE
+        Function_Mocks = list(set(Function_Mocks.split('\n')))
+        Function_Mocks = '\n'.join(Function_Mocks)
 else:
     Function_Mocks = '/*=== BYPASSED ===*/'        
 #######################################################################

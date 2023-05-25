@@ -226,14 +226,21 @@ def FunctionsToStub():
     data = []
     HeaderFuncs = GetAllFunctionsFromHeaders()
     MainFuncs = GetAllMainFunctions()
+    # Function to mock found in main file and in header file
     for header in HeaderFuncs:
       for main in MainFuncs:
         if header['Function Name'] in main['Body']:
-          # Function to mock found in main file and in header file
           print('Verified Function Mock Found')
-          new_data = {"Function Name": header['Function Name'], "Return Type": header['Return Type'], "Arguments": header['Arguments']}
+          new_data = {"Function Name": header['Function Name'], "Return Type": header['Return Type'], "Arguments": header['Arguments'], "Comment": 'Verified Mock'}
           data.append(new_data)
-    
+
+    # Unverified Function to mock found in main only
+    for main in MainFuncs:
+        UnverifiedFuncToStub = re.findall(r'\b([a-zA-Z_]\w*)\s*\(([^)]*)\);', main['Body'])
+        for Function in UnverifiedFuncToStub:
+            new_data = {"Function Name": Function[0], "Return Type": 'void', "Arguments": [Function[1]], "Comment": '// This Mock Return Type Is Not verified'}
+            data.append(new_data)
+         
     return data    
 
 # This will get our main function body as param -> check if there is functions to mock 
