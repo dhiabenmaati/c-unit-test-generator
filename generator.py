@@ -103,9 +103,9 @@ if Vars_Deftype_Condition == '1' :
         if element['Keyword'] == 'normal':
             Type_Stubs += 'typedef' + ' ' + element['Type'] + ' ' +element['Name'] + ' ' +';' + '\n'
         elif element['Keyword'] == 'struct':
-            Type_Stubs += 'typedef struct { ' + element['Type'] + ' }' + element['Name'] + ' ;' + '\n'
+            Type_Stubs += 'typedef struct ' + element['Additional'] + '{ ' + element['Type'] + ' }' + element['Name'] + ' ;' + '\n'
         elif element['Keyword'] == 'enum':
-            Type_Stubs += 'typedef enum { ' + element['Type'] + ' }' + element['Name'] + ' ;' + '\n'
+            Type_Stubs += 'typedef enum ' + element['Additional'] + '{ ' + element['Type'] + ' }' + element['Name'] + ' ;' + '\n'
 else:
     Var_Stubs = '/*=== BYPASSED ===*/'
     Type_Stubs = '/*=== BYPASSED ===*/'

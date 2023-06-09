@@ -16,7 +16,7 @@ else:
 
 ##################### extract all typedef from all files #####################
 # extract all typedef from all files
-def GetAllTypedef():
+def GetAllTypedef(): 
     data = []
     for root, dirs, All_files in os.walk(FolderPath, topdown=False):
         files = fnmatch.filter(All_files, '*.h')
@@ -37,7 +37,7 @@ def GetAllTypedef():
             for match in matches:
                 name = match[1]
                 type = match[0]
-                new_data = {"Name": name, "Type": type, "keyword":"normal"}
+                new_data = {"Name": name, "Additional": '', "Type": type, "keyword":"normal"}
                 
                 #If There is struct, enum, pointer or array we skip them 
                 if 'struct' in new_data['Type'] or 'enum' in new_data['Type']:
@@ -47,52 +47,50 @@ def GetAllTypedef():
             
             #############################################################################################################
             # Find all the struct typedef declarations
-            struct_typedef_pattern = r'typedef\s+struct\s*\{([^}]*)\}\s*(\w+)\s*;'
+            struct_typedef_pattern = r'typedef\s+struct\s*(.*)\s*\{([^}]*)\}\s*(\w+)\s*;'
             matches = re.findall(struct_typedef_pattern, c_code)
 
             # Print the matches
             for match in matches:
                 # Extract the name and fields
-                name = match[1]
-                fields = match[0]
+                name = match[2]
+                fields = match[1]
+                additional = match[0]
                 
-                new_data = {"Name": name, "Type": fields, "keyword":"struct"}
+                new_data = {"Name": name, "Additional": additional ,"Type": fields, "keyword":"struct"}
                 data.append(new_data)
             
             #############################################################################################################
             # Find all the enum typedef declarations
-            struct_typedef_pattern = r'typedef\s+enum\s*\{([^}]*)\}\s*(\w+)\s*;'
-            matches = re.findall(struct_typedef_pattern, c_code)
+            enum_typedef_pattern = r'typedef\s+enum\s*(.*)\s*\{([^}]*)\}\s*(\w+)\s*;'
+            matches = re.findall(enum_typedef_pattern, c_code)
 
             # Print the matches
             for match in matches:
                 # Extract the name and fields
-                name = match[1]
-                fields = match[0]
+                name = match[2]
+                fields = match[1]
+                additional = match[0]
                 
-                new_data = {"Name": name, "Type": fields, "keyword":"enum"}
+                new_data = {"Name": name, "Additional": additional, "Type": fields, "keyword":"enum"}
                 data.append(new_data)
- 
-    #Now we have all type defs
-    #we search if there is typedef using another typedef
-    for i in range(len(data)):
-        for j in range(len(data)):
-            if data[i]['Type'] == data[j]['Name']:
-                data[i]['Type'] = data[j]['Type']
-
+            
     return data
         
 ###################### extract all custom named variables from our current file #####################
 def GetAllCurrentCustomVars():
     data = []
+
     # Open the C code file
     with open(FilePath, 'r') as file:
         c_code = file.read()
     
+    c_code = comment_remover(c_code) # remove comments from our main file
+    
     # RegEx pattern 
     pattern = r"\b(\w+)\s+(\w+)\s*;|\b(\w+)\s+(\w+)\s*=\s*[\'\"]?(\w+)[\'\"]?\s*;"   
     matches = re.findall(pattern, c_code)
-  
+    
     AllTypeDefs = GetAllTypedef()
     
     for item1 in matches:
@@ -100,10 +98,10 @@ def GetAllCurrentCustomVars():
         # TOdo changed from tuple to list do required changes here 
         for item2 in AllTypeDefs:
             if item1[2] == item2['Name']:           
-                new_data = {"Variable": item1[3], "Value": item1[4], "Type": item2['Type'], 'Name': item2['Name'], 'Keyword': item2['keyword']} #If (char var1 = 15 ;)  !! has value
+                new_data = {"Variable": item1[3], "Value": item1[4], "Type": item2['Type'], 'Name': item2['Name'],'Additional': item2['Additional'] , 'Keyword': item2['keyword']} #If (char var1 = 15 ;)  !! has value
                 count = count + 1
             elif item1[0] == item2['Name']:           
-                new_data = {"Variable": item1[1], "Type": item2['Type'], 'Name': item2['Name'], 'Keyword': item2['keyword']}   # if (char var1 ;)  !! has no value
+                new_data = {"Variable": item1[1], "Type": item2['Type'], 'Name': item2['Name'],'Additional': item2['Additional'] , 'Keyword': item2['keyword']}   # if (char var1 ;)  !! has no value
                 count = count + 1
 
         if count == 0  :
@@ -111,7 +109,15 @@ def GetAllCurrentCustomVars():
         elif count == 1:
             data.append(new_data)
         elif count > 1:
-            print('pass')
+            data.append(new_data)
+
+    ### NOW WE HAVE ALL TYPEDEFS AND VARS WE CHECK IF TYPEDEF IS USING ANOTHER ONE
+    for typedef in AllTypeDefs:
+        for type in data:
+            type = type['Type'].split() # we split this to search for exact keyword in next step
+            if typedef['Name'] in type:
+                new_data = {"Variable": "", "Type": typedef['Type'], 'Name': typedef['Name'], 'Additional': item2['Additional'], 'Keyword': typedef['keyword']}
+                data.append(new_data)
 
     return data
 
@@ -130,21 +136,27 @@ def Get_Define_Consts():
             with open(os.path.join(root, name), encoding='utf-8', errors='ignore') as f:
                 c_code = f.read()
 
+            ###### GET NORMAL DEFINES  #######
             # Find all the define declarations with regex pattern
             define_pattern = re.compile(r'^#define\s+\w+\s*.*$', flags=re.MULTILINE)
             defines = re.findall(define_pattern, c_code)
 
             # Append Results to our list
             for define in defines:
-                define.replace('\t',' ') # Chnage tab to space for issue
+                define.replace('\t',' ') # Change tab to space for issue
                 define_list.append(define)
+
     
     # Open our main c code and search for used defines
     with open(FilePath, 'r') as file:
         c_code = file.read()
+
+    c_code = comment_remover(c_code) # remove comments from our main file
     
-    for define in define_list:        
-        define_splitted = define.split(' ') 
+    for define in define_list: 
+        define_with_space = define.replace("(", " (")  # we add space if "(" found just for macro (ex macro(x,y)  --> macro (x ,y) )    
+        define_splitted = define_with_space.split(' ') # we plit it by space to get the first value (define name)
+        
         
         if define_splitted[1] in c_code:
             # We remove all unwanted data and append to the final list
@@ -152,7 +164,17 @@ def Get_Define_Consts():
             define = re.sub(cleaning_pattern, '', define) # remove the //
             define = define.split('/*')[0].strip()        # remove the /*
 
-            data.append(define)           
+            data.append(define) 
+
+    # we search if define is using another define
+    for define in define_list:    
+        define_splitted = define.split(' ') # we plit it by space to get the first value (define name)
+        
+        for define2 in data:
+            if define_splitted[1] in define2: 
+                if define not in data:
+                    data.append(define)
+                     
               
     return data
 
@@ -258,3 +280,17 @@ def GetFunctionsCallsFromArgs(FctBody):
 def GetFileName():
     file_name = os.path.basename(FilePath)
     return file_name
+
+## REMOVE COMMENTS
+def comment_remover(text):
+    def replacer(match):
+        s = match.group(0)
+        if s.startswith('/'):
+            return " " # note: a space and not an empty string
+        else:
+            return s
+    pattern = re.compile(
+        r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
+        re.DOTALL | re.MULTILINE
+    )
+    return re.sub(pattern, replacer, text)
