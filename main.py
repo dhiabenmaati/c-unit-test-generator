@@ -145,7 +145,7 @@ def Get_Define_Consts():
             for define in defines:
                 define.replace('\t',' ') # Change tab to space for issue
                 define_list.append(define)
-
+                
     
     # Open our main c code and search for used defines
     with open(FilePath, 'r') as file:
@@ -159,7 +159,7 @@ def Get_Define_Consts():
         
         
         if define_splitted[1] in c_code:
-            # We remove all unwanted data and append to the final list
+            # We remove all unwanted data and append to the final list like comments
             cleaning_pattern = r'\s*//.*$'
             define = re.sub(cleaning_pattern, '', define) # remove the //
             define = define.split('/*')[0].strip()        # remove the /*
@@ -183,13 +183,35 @@ def Get_Define_Consts():
 #################### EXTRACT ALL FUNCTIONS + BODY FROM MAIN FILE ##########################
 def GetAllMainFunctions():
   with open(FilePath, 'r') as f:
-      content = f.read()
+      content = f.readlines()
 
-  pattern = r'\w+\s+\w+\s*\([^)]*\)\s*\{(?:[^{}]*{(?:[^{}]*{[^{}]*}[^{}]*|[^{}])*}[^{}]*|[^{}])*?\}'
-  matches = re.findall(pattern, content, re.DOTALL)
+  count = 0
+  pattern = r"\w*\s*\w+\s+\w+\s*\(.*?\)\s*"
+  correction_pattern = r"\w*\s*\w+\s+\w+\s*\(.*?\)\s*;$"
+
+  Functions_list = []
+
+  for line in content:
+    count += 1
+
+    if re.match(pattern, line) and not re.match(correction_pattern, line) :
+        Full_Function = ''
+        opened_union = 0
+        closed_union = 0
+        count2 = count-1
+        
+        while (opened_union == 0 or opened_union != closed_union):
+            opened_union += content[count2].strip().count('{')
+            closed_union += content[count2].strip().count('}')
+            
+            Full_Function += content[count2].strip() + '\n'
+
+            count2 += 1
+        
+        Functions_list.append(Full_Function) 
     
   data = []
-  for match in matches:
+  for match in Functions_list:
       func_body = match
       # filter and remove empty lines
       match = "\n".join(filter(lambda x: x.strip(), match.split("\n")))
@@ -212,6 +234,7 @@ def GetAllMainFunctions():
 
 def GetAllFunctionsFromHeaders():
     data = []
+    Functions_list = []
         
     # search for the full path of the file
     for root, dirs, files in os.walk(FolderPath):
@@ -220,12 +243,32 @@ def GetAllFunctionsFromHeaders():
                    
             ##### NOW WE LOOP ON ALL FOUND HEADERS AND EXTRACT ALL FUNCTIONS
             with open(os.path.join(root, name), encoding='utf-8', errors='ignore') as f:
-                content = f.read()
+                content = f.readlines()
                     
-            pattern = r'\w+\s+\w+\s*\([^)]*\)\s*\{(?:[^{}]*{(?:[^{}]*{[^{}]*}[^{}]*|[^{}])*}[^{}]*|[^{}])*?\}'
-            matches = re.findall(pattern, content, re.DOTALL)
+            count = 0
+            pattern = r"\w*\s*\w+\s+\w+\s*\(.*?\)\s*"
+            correction_pattern = r"\w*\s*\w+\s+\w+\s*\(.*?\)\s*;$"
 
-            for match in matches:
+            for line in content:
+                count += 1
+
+                if re.match(pattern, line) and not re.match(correction_pattern, line) :
+                    Full_Function = ''
+                    opened_union = 0
+                    closed_union = 0
+                    count2 = count-1
+                    
+                    while (opened_union == 0 or opened_union != closed_union):
+                        opened_union += content[count2].strip().count('{')
+                        closed_union += content[count2].strip().count('}')
+                        
+                        Full_Function += content[count2].strip() + '\n'
+
+                        count2 += 1
+                    
+                    Functions_list.append(Full_Function) 
+
+            for match in Functions_list:
 
                 # filter and remove empty lines
                 match = "\n".join(filter(lambda x: x.strip(), match.split("\n")))
