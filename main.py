@@ -105,7 +105,7 @@ def GetAllCurrentCustomVars():
                 count = count + 1
 
         if count == 0  :
-            print('pass')
+            print('Variable with unknown type - > ' + item1[3] + item1[1]) # var name will be in [3] or [1]
         elif count == 1:
             data.append(new_data)
         elif count > 1:
@@ -296,7 +296,7 @@ def FunctionsToStub():
       for main in MainFuncs:
         if header['Function Name'] in main['Body']:
           print('Verified Function Mock Found')
-          new_data = {"Function Name": header['Function Name'], "Return Type": header['Return Type'], "Arguments": header['Arguments'], "Comment": 'Verified Mock'}
+          new_data = {"Function Name": header['Function Name'], "Return Type": header['Return Type'], "Arguments": header['Arguments'], "Comment": '// Verified Mock'}
           data.append(new_data)
 
     # Unverified Function to mock found in main only
